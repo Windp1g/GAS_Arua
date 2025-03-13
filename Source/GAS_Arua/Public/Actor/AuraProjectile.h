@@ -20,6 +20,7 @@ public:
 	AAuraProjectile();
 
 	UPROPERTY(VisibleAnywhere)
+	
 	TObjectPtr<UProjectileMovementComponent> ProjectileMovement;
 
 	UPROPERTY(BlueprintReadWrite, meta = (ExposeOnSpawn = true))

@@ -18,7 +18,7 @@ void UTargetDataUnderMouse::Activate()
 	const bool bIsLocallyControlled = Ability->GetCurrentActorInfo()->IsLocallyControlled();
 	if (bIsLocallyControlled)
 	{
-		SendMouseCurosrData();
+		SendMouseCursorData();
 	}
 	else
 	{
@@ -28,7 +28,7 @@ void UTargetDataUnderMouse::Activate()
 		AbilitySystemComponent.Get()->AbilityTargetDataSetDelegate(
 			SpecHandle,
 			ActivationPredictionKey).
-			AddUObject(this, &UTargetDataUnderMouse::OnTaegetDataReplicatedCallback);
+			AddUObject(this, &UTargetDataUnderMouse::OnTargetDataReplicatedCallback);
 		
 		const bool bCalledDelegate = AbilitySystemComponent.Get()->CallReplicatedTargetDataDelegatesIfSet(SpecHandle,ActivationPredictionKey);
 		if (!bCalledDelegate)
@@ -39,7 +39,7 @@ void UTargetDataUnderMouse::Activate()
 	
 }
 
-void UTargetDataUnderMouse::SendMouseCurosrData()
+void UTargetDataUnderMouse::SendMouseCursorData()
 {
 	FScopedPredictionWindow ScopedPrediction(AbilitySystemComponent.Get());
 	
@@ -65,7 +65,7 @@ void UTargetDataUnderMouse::SendMouseCurosrData()
 	}
 }
 
-void UTargetDataUnderMouse::OnTaegetDataReplicatedCallback(const FGameplayAbilityTargetDataHandle& DataHandle,
+void UTargetDataUnderMouse::OnTargetDataReplicatedCallback(const FGameplayAbilityTargetDataHandle& DataHandle,
 	FGameplayTag ActivationTag)
 {
 	AbilitySystemComponent->ConsumeClientReplicatedTargetData(GetAbilitySpecHandle(), GetActivationPredictionKey());
