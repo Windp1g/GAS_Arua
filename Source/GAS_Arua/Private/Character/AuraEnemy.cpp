@@ -75,11 +75,11 @@ int32 AAuraEnemy::GetPlayerLevel_Implementation()
 	return Level;
 }
 
-void AAuraEnemy::Die()
+void AAuraEnemy::Die(const FVector& DeathImpulse)
 {
 	SetLifeSpan(LifeSpan);
 	if (AuraAIController) AuraAIController->GetBlackboardComponent()->SetValueAsBool(FName("Dead"), true);
-	Super::Die();
+	Super::Die(DeathImpulse);
 }
 
 void AAuraEnemy::BeginPlay()
@@ -109,9 +109,9 @@ void AAuraEnemy::BeginPlay()
 			}
 		);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AuraAS->GetMaxHealthAttribute()).AddLambda(
-			[this](const FOnAttributeChangeData& Data)
+			[this, AuraAS](const FOnAttributeChangeData& Data)
 			{
-				OnMaxHealthChanged.Broadcast(Data.NewValue);
+				OnMaxHealthChanged.Broadcast(AuraAS->GetMaxHealth());
 			}
 		);
 
@@ -144,6 +144,8 @@ void AAuraEnemy::InitAbilityActorInfo()
 	{
 		InitializeDefaultAttributes();
 	}
+
+	OnASCRegistered.Broadcast(AbilitySystemComponent);
 }
 
 void AAuraEnemy::InitializeDefaultAttributes() const
