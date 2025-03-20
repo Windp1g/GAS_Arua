@@ -95,6 +95,11 @@ void UAuraAttributeSet::HandleIncomingDamage(const FEfffectProperties& Props)
 		const float NewHealth = GetHealth() - LocalIncomingDamage;
 		SetHealth(FMath::Clamp(NewHealth, 0.f, GetMaxHealth()));
 
+		if (Props.SourceASC->HasMatchingGameplayTag(FAuraGameplayTags::Get().Abilities_Passive_LifeSiphon))
+		{
+			SendDamageEvent(Props, LocalIncomingDamage);
+		}
+
 		const bool bFatal = NewHealth <= 0.f;
 		if (bFatal)
 		{
@@ -106,9 +111,12 @@ void UAuraAttributeSet::HandleIncomingDamage(const FEfffectProperties& Props)
 		}
 		else
 		{
-			FGameplayTagContainer TagContainer;
-			TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
-			Props.TargetASC->TryActivateAbilitiesByTag(TagContainer);
+			if (Props.TargetCharacter->Implements<UCombatInterface>() && !ICombatInterface::Execute_IsBeingShock(Props.TargetCharacter))
+			{
+				FGameplayTagContainer TagContainer;
+				TagContainer.AddTag(FAuraGameplayTags::Get().Effects_HitReact);
+				Props.TargetASC->TryActivateAbilitiesByTag(TagContainer);
+			}
 
 			const FVector& KnockbackForce = UAuraAbilitySystemLibrary::GetKnockbackForce(Props.EffectContextHandle);
 			if (!KnockbackForce.IsNearlyZero(1.f))
@@ -145,8 +153,16 @@ void UAuraAttributeSet::Debuff(const FEfffectProperties& Props)
 	Effect->Period = DebuffFrequency;
 	Effect->DurationMagnitude = FScalableFloat(DebuffDuration);
 
+	const FGameplayTag DebuffTag = GameplayTags.DamageTypesToDebuffs[DamageType];
 	FInheritedTagContainer DebuffTags;
-	DebuffTags.AddTag(GameplayTags.DamageTypesToDebuffs[DamageType]);
+	DebuffTags.AddTag(DebuffTag);
+	if (DebuffTag.MatchesTagExact(GameplayTags.Debuff_Stun))
+	{
+		DebuffTags.AddTag(GameplayTags.Player_Block_CursorTrace);
+		DebuffTags.AddTag(GameplayTags.Player_Block_InputHeld);
+		DebuffTags.AddTag(GameplayTags.Player_Block_InputPressed);
+		DebuffTags.AddTag(GameplayTags.Player_Block_InputReleased);
+	}
 	UTargetTagsGameplayEffectComponent& GameplayEffectComponent = Effect->AddComponent<UTargetTagsGameplayEffectComponent>();
 	GameplayEffectComponent.SetAndApplyTargetTagChanges(DebuffTags);
 	
@@ -268,6 +284,19 @@ void UAuraAttributeSet::ShowFloatingText(const FEfffectProperties& Props, float 
 		}
 	}
 }
+
+void UAuraAttributeSet::SendDamageEvent(const FEfffectProperties& Props, float InComingDamage)
+{
+	if (Props.TargetAvatarActor->Implements<UCombatInterface>())
+	{
+		const FAuraGameplayTags& GameplayTags = FAuraGameplayTags::Get();
+		FGameplayEventData Payload;
+		Payload.EventTag = GameplayTags.Attributes_Meta_IncomingDamage;
+		Payload.EventMagnitude = InComingDamage;
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Props.SourceCharacter, GameplayTags.Attributes_Meta_IncomingDamage, Payload);
+	}
+}
+
 //TODO: 可以将经验与具体角色挂钩而不是职业
 void UAuraAttributeSet::SendXPEvent(const FEfffectProperties& Props)
 {

@@ -11,6 +11,8 @@ DECLARE_MULTICAST_DELEGATE(FAbilitiesGiven);
 DECLARE_DELEGATE_OneParam(FForEachAbility, const FGameplayAbilitySpec&)
 DECLARE_MULTICAST_DELEGATE_ThreeParams(FAbilityStatusChanged, const FGameplayTag& /*AbilityTag*/, const FGameplayTag& /*StatusTag*/, int32 /*AbilityLevel*/);
 DECLARE_MULTICAST_DELEGATE_FourParams(FAbilityEquipped, const FGameplayTag& /*AbilityTag*/, const FGameplayTag& /*Status*/, const FGameplayTag& /*Slot*/, const FGameplayTag& /*PrevSlot*/);
+DECLARE_MULTICAST_DELEGATE_OneParam(FDeactivatePassiveAbility, const FGameplayTag& /*AbilityTag*/);
+DECLARE_MULTICAST_DELEGATE_TwoParams(FActivatePassiveNiagara, const FGameplayTag& /*AbilityTag*/, bool /*bActivate*/);
 /**
  * 
  */
@@ -25,6 +27,8 @@ public:
 	FAbilitiesGiven AbilitiesGivenDelegate;
 	FAbilityStatusChanged AbilityStatusChangedDelegate;
 	FAbilityEquipped AbilityEquippedDelegate;
+	FDeactivatePassiveAbility DeactivatePassiveAbility;
+	FActivatePassiveNiagara ActivatePassiveNiagara;
 	bool bStartupAbilitiesGiven = false;
 
 	void AddCharacterAbilities(const TArray<TSubclassOf<UGameplayAbility>>& StartupAbilities);
@@ -40,7 +44,11 @@ public:
 	static FGameplayTag GetStatusTagFromSpec(const FGameplayAbilitySpec& AbilitySpec);
 	FGameplayTag GetStatusFromAbilityTag(const FGameplayTag& AbilityTag);
 	FGameplayTag GetInputTagFromAbilityTag(const FGameplayTag& AbilityTag);
+	FGameplayAbilitySpec* GetSpecWithSlot(const FGameplayTag& Slot);
+	bool IsPassiveAbility(const FGameplayAbilitySpec& Spec) const;
 	
+	UFUNCTION(NetMulticast, Unreliable)
+	void MulticastActivatePassiveNiagara(const FGameplayTag& AbilityTag, bool bActivate);
 
 	FGameplayAbilitySpec* GetSpecFromAbilityTag(const FGameplayTag& AbilityTag);
 
@@ -62,9 +70,13 @@ public:
 
 	bool GetDescriptionByAbilityTag(const FGameplayTag& AbilityTag, FString& OutDescription, FString& OutNextLevelDescription);
 
-	void ClearSlot(FGameplayAbilitySpec* Spec);
+	static void ClearSlot(FGameplayAbilitySpec* Spec);
 	void ClearAbilitiesOfSlot(const FGameplayTag& Slot);
 	static bool AbilityHasSlot(FGameplayAbilitySpec* Spec, const FGameplayTag& Slot);
+	bool SlotIsEmpty(const FGameplayTag& Slot);
+	static bool AbilityHasAnySlot(const FGameplayAbilitySpec& Spec);
+	static void AssignSlotToAbility(FGameplayAbilitySpec& Spec, const FGameplayTag& Slot);
+	
 protected:
 
 	virtual void OnRep_ActivateAbilities() override;
@@ -75,4 +87,9 @@ protected:
 	UFUNCTION(Client, reliable)
 	void ClientUpdateAbilityStatus(const FGameplayTag& AbilityTag, const FGameplayTag& StatusTag, int32 AbilityLevel);
 };
+
+
+
+
+
 

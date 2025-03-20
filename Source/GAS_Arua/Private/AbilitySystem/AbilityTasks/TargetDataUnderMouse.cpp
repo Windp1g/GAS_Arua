@@ -5,6 +5,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
+#include "GAS_Arua/GAS_Arua.h"
 
 UTargetDataUnderMouse* UTargetDataUnderMouse::CreateTargetDataUnderMouse(UGameplayAbility* OwningAbility)
 {
@@ -39,19 +40,31 @@ void UTargetDataUnderMouse::Activate()
 	
 }
 
+void UTargetDataUnderMouse::OnDestroy(bool bInOwnerFinished)
+{
+	const FGameplayAbilitySpecHandle SpecHandle = GetAbilitySpecHandle();
+	const FPredictionKey ActivationPredictionKey = GetActivationPredictionKey();
+	if (AbilitySystemComponent.IsValid()) {
+		AbilitySystemComponent->AbilityTargetDataSetDelegate(SpecHandle,
+			ActivationPredictionKey).RemoveAll(this);
+	}
+	Super::OnDestroy(bInOwnerFinished);
+}
+
 void UTargetDataUnderMouse::SendMouseCursorData()
 {
 	FScopedPredictionWindow ScopedPrediction(AbilitySystemComponent.Get());
 	
 	APlayerController* PC = Ability->GetCurrentActorInfo()->PlayerController.Get();
 	FHitResult CursorHit;
-	PC->GetHitResultUnderCursor(ECC_Visibility, false, CursorHit);
+	PC->GetHitResultUnderCursor(ECC_Target, false, CursorHit);
 
 	FGameplayAbilityTargetDataHandle DataHandle;
 	FGameplayAbilityTargetData_SingleTargetHit* Data = new FGameplayAbilityTargetData_SingleTargetHit();
 	Data->HitResult = CursorHit;
 	DataHandle.Add(Data);
 
+	if (Ability->GetCurrentActorInfo()->IsLocallyControlled())
 	AbilitySystemComponent->ServerSetReplicatedTargetData(
 		GetAbilitySpecHandle(),
 		GetActivationPredictionKey(),

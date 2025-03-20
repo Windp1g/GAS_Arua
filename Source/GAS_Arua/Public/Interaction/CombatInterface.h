@@ -91,4 +91,13 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void SetInShockLoop(bool bInLoop);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	USkeletalMeshComponent* GetWeapon();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	bool IsBeingShock() const;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void SetBeingShock(bool bBeingShock);
 };

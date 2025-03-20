@@ -241,11 +241,13 @@ private:
 	void SetEffectProperties(const FGameplayEffectModCallbackData& Data, FEfffectProperties& Props);
 	void ShowFloatingText(const FEfffectProperties& Props, float Damage, bool bBlockedHit, bool bCriticalHit) const;
 	void SendXPEvent(const FEfffectProperties& Props);
+	void SendDamageEvent(const FEfffectProperties& Props, float InComingDamage);
 	void HandleIncomingDamage(const FEfffectProperties& Props);
 	void HandleIncomingXP(const FEfffectProperties& Props);
 	void Debuff(const FEfffectProperties& Props);
 	bool bTopOffHealth = false;
 	bool bTopOffMana = false;
 };
+
 
 

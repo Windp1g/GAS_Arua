@@ -25,6 +25,7 @@ public:
 
 private:
 	virtual void Activate() override;
+	virtual void OnDestroy(bool bInOwnerFinished) override;
 	void SendMouseCursorData();
 
 	void OnTargetDataReplicatedCallback(const FGameplayAbilityTargetDataHandle& DataHandle, FGameplayTag ActivationTag);

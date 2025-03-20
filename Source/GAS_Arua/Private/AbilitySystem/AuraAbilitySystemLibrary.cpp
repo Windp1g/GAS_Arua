@@ -310,7 +310,7 @@ void UAuraAbilitySystemLibrary::GetLivePlayerWithinRadius(const UObject* WorldCo
                                                           TArray<AActor*>& OutOverlappingActors, const TArray<AActor*>& ActorsToIgnore, float Radius,
                                                           const FVector& SphereOrigin)
 {
-	 FCollisionQueryParams SphereParams;
+	FCollisionQueryParams SphereParams;
 	SphereParams.AddIgnoredActors(ActorsToIgnore);
 
 	TArray<FOverlapResult> Overlaps;
@@ -324,6 +324,38 @@ void UAuraAbilitySystemLibrary::GetLivePlayerWithinRadius(const UObject* WorldCo
 				OutOverlappingActors.AddUnique(Overlap.GetActor());
 			}
 		}
+	}
+}
+
+void UAuraAbilitySystemLibrary::GetClosestTargets(int32 MaxTargets, const TArray<AActor*>& Actors,
+	TArray<AActor*>& OutClosestTargets, const FVector& Origin)
+{
+	if (Actors.Num() <= MaxTargets)
+	{
+		OutClosestTargets = Actors;
+		return;
+	}
+	
+	TArray<AActor*> ActorsToCheck = Actors;
+	int32 NumTargetsFound = 0;
+	
+	while (NumTargetsFound < MaxTargets)
+	{
+		if (ActorsToCheck.IsEmpty()) break;
+		double ClosestDistance = TNumericLimits<double>::Max();
+		AActor* ClosestActor;
+		for (auto PotentialActor : ActorsToCheck)
+		{
+			const double Distance = FVector::Dist(Origin, PotentialActor->GetActorLocation());
+			if (Distance < ClosestDistance)
+			{
+				ClosestActor = PotentialActor;
+				ClosestDistance = Distance;
+			}
+		}
+		ActorsToCheck.Remove(ClosestActor);
+		OutClosestTargets.AddUnique(ClosestActor);
+		NumTargetsFound++;
 	}
 }
 
