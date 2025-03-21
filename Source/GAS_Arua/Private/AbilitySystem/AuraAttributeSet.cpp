@@ -118,8 +118,9 @@ void UAuraAttributeSet::HandleIncomingDamage(const FEfffectProperties& Props)
 				Props.TargetASC->TryActivateAbilitiesByTag(TagContainer);
 			}
 
+			const bool  bKnockback  = FMath::RandRange(1, 100) < UAuraAbilitySystemLibrary::GetKnockbackChance(Props.EffectContextHandle);
 			const FVector& KnockbackForce = UAuraAbilitySystemLibrary::GetKnockbackForce(Props.EffectContextHandle);
-			if (!KnockbackForce.IsNearlyZero(1.f))
+			if (!KnockbackForce.IsNearlyZero(1.f) && bKnockback)
 			{
 				Props.TargetCharacter->LaunchCharacter(KnockbackForce, true, true);
 			}

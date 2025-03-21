@@ -14,11 +14,13 @@ class GAS_ARUA_API UAuraLifeSiphon : public UAuraPassiveAbility
 {
 	GENERATED_BODY()
 public:
+	virtual FString GetDescription(int32 Level) override;
+	virtual FString GetNextLevelDescription(int32 Level) override;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	FScalableFloat SiphonMagnitude;
 
 	UFUNCTION(BlueprintCallable)
-	float GetSiphonMagnitude();
+	float GetSiphonMagnitude(float InLevel) const;
 };

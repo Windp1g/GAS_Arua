@@ -72,9 +72,7 @@ void AAuraProjectile::Destroyed()
 void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
                                       UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (DamageEffectParams.SourceAbilitySystemComponent == nullptr) return;
-	if (GetInstigator() == OtherActor) return;
-	if (!UAuraAbilitySystemLibrary::IsNotFriend(GetInstigator(), OtherActor)) return;
+	if (!IsValidOverlap(OtherActor)) return;
 	if (!bHit)
 	{
 		OnHit();
@@ -84,18 +82,11 @@ void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 	{
 		if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor))
 		{
-			const FVector DeathImpulse = GetActorForwardVector() * DamageEffectParams.DeathImpulseMagnitude;
-			DamageEffectParams.DeathImpulse = DeathImpulse;
-			const bool bKnockback = FMath::RandRange(1, 100) < DamageEffectParams.KnockbackChance;
-			if (bKnockback)
-			{
-				FRotator Rotation = GetActorRotation();
-				Rotation.Pitch = 45.f;
-
-				const FVector KnockbackDirection = Rotation.Vector();
-				const FVector KnockbackForce = KnockbackDirection * DamageEffectParams.KnockbackForceMagnitude;
-				DamageEffectParams.KnockbackForce = KnockbackForce;
-			}
+			FRotator Rotation = (OtherActor->GetActorLocation() - GetActorLocation()).Rotation();
+			Rotation.Pitch = 45.f;
+			const FVector ToTarget = Rotation.Vector();
+			DamageEffectParams.DeathImpulse = ToTarget * DamageEffectParams.DeathImpulseMagnitude;
+			DamageEffectParams.KnockbackForce = ToTarget * DamageEffectParams.KnockbackForceMagnitude;
 			DamageEffectParams.TargetAbilitySystemComponent = TargetASC;
 			UAuraAbilitySystemLibrary::ApplyDamageEffect(DamageEffectParams);
 		}
@@ -106,4 +97,12 @@ void AAuraProjectile::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, 
 	{
 		bHit = true;
 	}
+}
+
+bool AAuraProjectile::IsValidOverlap(AActor* OtherActor)
+{
+	if (DamageEffectParams.SourceAbilitySystemComponent == nullptr) return false;
+	if (GetInstigator() == OtherActor) return false;
+	if (!UAuraAbilitySystemLibrary::IsNotFriend(GetInstigator(), OtherActor)) return false;
+	return true;
 }

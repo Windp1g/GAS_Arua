@@ -10,6 +10,7 @@
 #include "AbilitySystem/AuraAttributeSet.h"
 #include "AbilitySystem/Data/CharacterClassInfo.h"
 #include "Interaction/CombatInterface.h"
+#include "Kismet/GameplayStatics.h"
 
 struct AuraDamageStatics
 {
@@ -138,6 +139,7 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 
 
 	const FGameplayEffectSpec& Spec = ExecutionParams.GetOwningSpec();
+	FGameplayEffectContextHandle EffectContextHandle = Spec.GetContext();
 
 	const FGameplayTagContainer* SourceTags = Spec.CapturedSourceTags.GetAggregatedTags();
 	const FGameplayTagContainer* TargetTags = Spec.CapturedTargetTags.GetAggregatedTags();
@@ -150,23 +152,54 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 
 	//Get Damage Set by Caller Magnitude
 	float Damage = 0.f;
+	float DamageBeforeResistance = 0.f;
 	for (auto& Pair : FAuraGameplayTags::Get().DamageTypesToResistances)
 	{
 		const FGameplayTag DamageTypeTag = Pair.Key;
 		const FGameplayTag ResistanceTag = Pair.Value;
 		
-		checkf(TagsToCaptureDefs.Contains(ResistanceTag), TEXT("TAgsToCaptureDefs doesn't contain Tag: [%s] in ExecCalc_Damage"), *ResistanceTag.ToString());
+		checkf(TagsToCaptureDefs.Contains(ResistanceTag), TEXT("TagsToCaptureDefs doesn't contain Tag: [%s] in ExecCalc_Damage"), *ResistanceTag.ToString());
 		const FGameplayEffectAttributeCaptureDefinition CaptureDef = TagsToCaptureDefs[ResistanceTag];
 
 		float DamageTypeValue = Spec.GetSetByCallerMagnitude(DamageTypeTag, false, 0.f);
+
+		if (DamageTypeValue <= 0.f)
+		{
+			continue;
+		}
 		
 		float Resistance = 0.f;
 		ExecutionParams.AttemptCalculateCapturedAttributeMagnitude(CaptureDef, EvaluateParameters, Resistance);
 		Resistance = FMath::Clamp(Resistance, 0.f, 100.f);
 
+		DamageBeforeResistance += DamageTypeValue;
 		DamageTypeValue *= (100.f - Resistance) / 100.f;
 		
 		Damage += DamageTypeValue;
+	}
+
+	if (UAuraAbilitySystemLibrary::IsRadialDamage(EffectContextHandle))
+	{
+		float RadialMinDamage = UAuraAbilitySystemLibrary::GetRadialMinDamage(EffectContextHandle) * (Damage / DamageBeforeResistance);
+		if(ICombatInterface* CombatInterface = Cast<ICombatInterface>(TargetAvatar))
+		{
+			CombatInterface->GetOnDamageSignature().AddLambda([&](float DamageAmount)
+			{
+				Damage = DamageAmount;
+			});
+		}
+		UGameplayStatics::ApplyRadialDamageWithFalloff(
+			TargetAvatar,
+			Damage,
+			RadialMinDamage,
+			UAuraAbilitySystemLibrary::GetRadialOrigin(EffectContextHandle),
+			UAuraAbilitySystemLibrary::GetRadialDamageInnerRadius(EffectContextHandle),
+			UAuraAbilitySystemLibrary::GetRadialDamageOuterRadius(EffectContextHandle),
+			1.f,
+			UDamageType::StaticClass(),
+			TArray<AActor*>(),
+			SourceAvatar,
+			nullptr);
 	}
 	
 	float TargetBlockChance = 0.f;
@@ -174,8 +207,6 @@ void UExecCalc_Damage::Execute_Implementation(const FGameplayEffectCustomExecuti
 	TargetBlockChance = FMath::Max(TargetBlockChance, 0.f);
 
 	const bool bBlocked = FMath::RandRange(1, 100) < TargetBlockChance;
-
-	FGameplayEffectContextHandle EffectContextHandle = Spec.GetContext();
 	
 	UAuraAbilitySystemLibrary::SetIsBlockedHit(EffectContextHandle, bBlocked);
 	
