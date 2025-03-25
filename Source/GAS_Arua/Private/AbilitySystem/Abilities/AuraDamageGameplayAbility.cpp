@@ -5,7 +5,6 @@
 
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
-#include "SAdvancedRotationInputBox.h"
 
 void UAuraDamageGameplayAbility::CauseDamage(AActor* TargetActor)
 {

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Character/AuraCharacterBase.h"
 #include "Interaction/EnemyInterface.h"
+#include "Interaction/HighlightInterface.h"
 #include "UI/WidgetController/OverlayWidgetController.h"
 #include "AuraEnemy.generated.h"
 
@@ -15,7 +16,7 @@ class AAuraAIController;
  * 
  */
 UCLASS()
-class GAS_ARUA_API AAuraEnemy : public AAuraCharacterBase, public IEnemyInterface
+class GAS_ARUA_API AAuraEnemy : public AAuraCharacterBase, public IEnemyInterface, public IHighlightInterface
 {
 	GENERATED_BODY()
 public:
@@ -23,8 +24,6 @@ public:
 	virtual void PossessedBy(AController* NewController) override;
 
 	/** Enemy Interface */
-	virtual  void HighlightActor() override;
-	virtual  void UnHighlightActor() override;
 	virtual  void SetCombatTarget_Implementation(AActor* InCombatTarget) override;
 	virtual  AActor* GetCombatTarget_Implementation() const override;
 	/** End Enemy Interface */
@@ -34,6 +33,12 @@ public:
 	virtual void Die(const FVector& DeathImpulse) override;
 	/** end Combat Interface */
 
+	/** Highlight Interface */
+	virtual void HighlightActor_Implementation() override;
+	virtual void UnHighlightActor_Implementation() override;
+	virtual void SetMoveToLocation_Implementation(FVector& OutDestination) override;
+	/** End Highlight Interface */
+	
 	UPROPERTY(BlueprintAssignable)
 	FOnAttributeChangedSignature OnHealthChanged;
 
@@ -50,6 +55,8 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Combat")
 	TObjectPtr<AActor> CombatTarget;
+
+	void SetLevel(int32 InLevel) { Level = InLevel; }
 	
 protected:
 	virtual void BeginPlay() override;
@@ -68,6 +75,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<AAuraAIController> AuraAIController;
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void SpawnLoot();
 	
 private:
 

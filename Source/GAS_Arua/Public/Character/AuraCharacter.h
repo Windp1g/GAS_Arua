@@ -24,7 +24,13 @@ public:
 
 	/** Combat Interface */
 	virtual int32 GetPlayerLevel_Implementation() override;
+	virtual void Die(const FVector& DeathImpulse) override;
 	/** end Combat Interface */
+
+	UPROPERTY(EditDefaultsOnly)
+	float DeathTime = 5.f;
+
+	FTimerHandle DeathTimer;
 
 	/** Player Interface */
 	virtual void AddToXP_Implementation(int32 InXP) override;
@@ -40,6 +46,7 @@ public:
 	virtual int32 GetSpellPoints_Implementation() const override;
 	virtual void ShowMagicCircle_Implementation(UMaterialInterface* DecalMaterial = nullptr) override;
 	virtual void HideMagicCircle_Implementation() override;
+	virtual void SaveProgress_Implementation(const FName& CheckPointTag) override;
 	/** end Player Interface */
 
 	UPROPERTY(VIsibleAnywhere, BlueprintReadOnly)
@@ -48,6 +55,8 @@ public:
 	virtual void OnRep_Stunned() override;
 
 	virtual void OnRep_Burned() override;
+
+	void LoadProgress();
 
 private:
 
